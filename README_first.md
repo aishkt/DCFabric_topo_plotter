@@ -23,28 +23,40 @@ anish_topo_Agent_Project/
 
 ---
 
-## ⚠️ Important: EC2 vs UMN EC2 Disambiguation
+## ⚠️ Important: Keyword Matching Rules for AI Agents
 
-**When user says "EC2 fabric" or just "EC2", clarify which they mean:**
+**Clear, unambiguous rules for agent selection:**
 
-### UMN EC2 (Management Core)
-- **Keywords**: "UMN EC2", "UMN EC2 fabric"
-- **Data Source**: SwitchBuilderBrickDef-EC2
-- **Devices**: Management core routers (es-mgmt-cor-r1, es-mgmt-cor-r2)
-- **Use Case**: Console/management network topology
-- **Agent**: `umn_ec2_fabric_draw_Agent/`
+### Default Interpretations (When "UMN" NOT mentioned)
 
-### EC2 Fabric (BFC/OneFabric)
-- **Keywords**: "EC2 fabric", "EC2 BFC", "FabricBuilder EC2"
-- **Data Source**: FabricBuilderSiteConfigs
-- **Devices**: BFC fabric (es-c1) and OneFabric (es-e1)
-- **Use Case**: Compute fabric topology
-- **Agent**: `ec2_fabric_draw_Agent/`
+| User Says | Agent to Use | Reasoning |
+|-----------|--------------|-----------|
+| "EC2 fabric" | **EC2 Fabric** (BFC/OneFabric) | Default EC2 = BFC fabric |
+| "EC2 diagram" | **EC2 Fabric** (BFC/OneFabric) | Default EC2 = BFC fabric |
+| "PROD fabric" | **PROD Fabric** (BFC) | Default PROD = BFC fabric |
+| "PROD diagram" | **PROD Fabric** (BFC) | Default PROD = BFC fabric |
+| "Corp fabric" | **Corp NAP** | Corp = NAP fabric |
+| "NAP fabric" | **Corp NAP** | NAP = Corp NAP fabric |
 
-**Quick Decision:**
-- User mentions "UMN" → Use UMN EC2 agent
-- User mentions "BFC" or "OneFabric" → Use EC2 fabric agent
-- User says just "EC2" → **Ask them to clarify!**
+### Explicit UMN Requests (When "UMN" IS mentioned)
+
+| User Says | Agent to Use | Reasoning |
+|-----------|--------------|-----------|
+| "UMN EC2" | **UMN EC2** (Management Core) | Explicit UMN request |
+| "EC2 UMN" | **UMN EC2** (Management Core) | Explicit UMN request |
+| "UMN PROD" | **UMN PROD** (Management Core) | Explicit UMN request |
+| "PROD UMN" | **UMN PROD** (Management Core) | Explicit UMN request |
+
+### Summary Rules
+
+**Simple rule for AI agents:**
+- ✅ "EC2" alone → EC2 Fabric (BFC/OneFabric)
+- ✅ "PROD" alone → PROD Fabric (BFC)
+- ✅ "Corp" or "NAP" → Corp NAP
+- ✅ "UMN EC2" or "EC2 UMN" → UMN EC2 (Management Core)
+- ✅ "UMN PROD" or "PROD UMN" → UMN PROD (Management Core)
+
+**NO ambiguity. NO clarification needed. Just match keywords and select agent.**
 
 ---
 
@@ -56,24 +68,18 @@ When a user requests a topology, follow this discovery process:
 
 **Step 1: Identify Topology Type from User Prompt**
 
-Match keywords in user request:
+Match keywords in user request using these CLEAR rules:
 
-**IMPORTANT: "EC2" is ambiguous - clarify which type:**
-
-- "UMN EC2" or "UMN EC2 fabric" → `umn_ec2_fabric_draw_Agent/`
-  - Uses: SwitchBuilder brick files
-  - Shows: Management core devices (es-mgmt-cor)
-  
-- "EC2 fabric" or "EC2 BFC" or "FabricBuilder EC2" → `ec2_fabric_draw_Agent/`
-  - Uses: FabricBuilder YAML files
-  - Shows: BFC and OneFabric devices (es-c1, es-e1)
-
-**Other topologies:**
-- "UMN PROD" or "PROD fabric" → `umn_prod_fabric_draw_Agent/`
+**Default Mappings (when "UMN" NOT mentioned):**
+- "EC2" → `ec2_fabric_draw_Agent/` (BFC/OneFabric)
+- "PROD" → `prod_fabric_draw_Agent/` (BFC)
+- "Corp" or "NAP" → `corp_nap_fabric_draw_agent/`
 - "DSN" → `dsn_fabric_draw_agent/`
 - "Console" → `console_fabric_draw_Agent/`
-- "PROD site" or "FabricBuilder PROD" → `prod_fabric_draw_Agent/`
-- "Corp NAP" or "NAP fabric" → `corp_nap_fabric_draw_agent/`
+
+**Explicit UMN Mappings (when "UMN" IS mentioned):**
+- "UMN EC2" or "EC2 UMN" → `umn_ec2_fabric_draw_Agent/` (Management Core)
+- "UMN PROD" or "PROD UMN" → `umn_prod_fabric_draw_Agent/` (Management Core)
 
 **Step 2: Navigate to Agent Directory**
 
@@ -121,21 +127,26 @@ Every REQUIREMENTS.md has a "🚀 Quick Start" section with:
 - ✅ "Generate Console topology for BJS11"
 - ✅ "Create Corp NAP topology for bjs11-11"
 
-### Topology Type Keywords (CLARIFIED)
+### Topology Type Keywords (UNAMBIGUOUS)
 
-| Topology | Keywords | Data Source | Devices Shown |
-|----------|----------|-------------|---------------|
-| **UMN EC2** | "UMN EC2", "UMN EC2 fabric" | SwitchBuilder brick | Management core (es-mgmt-cor) |
-| **EC2 BFC** | "EC2 fabric", "EC2 BFC", "FabricBuilder EC2" | FabricBuilder YAML | BFC + OneFabric (es-c1, es-e1) |
-| UMN PROD | "UMN PROD", "PROD fabric" | SwitchBuilder brick | PROD management core |
-| PROD BFC | "PROD site", "FabricBuilder PROD" | FabricBuilder YAML | PROD BFC devices |
-| DSN | "DSN" | GenevaBuilder | DSN fabric |
-| Console | "Console" | ConsoleSiteDef | Console fabric |
-| Corp NAP | "Corp NAP", "NAP fabric" | GenevaBuilder | NAP fabric |
+| User Input | Agent Selected | Data Source | Devices Shown |
+|------------|----------------|-------------|---------------|
+| "EC2" (alone) | **EC2 Fabric** | FabricBuilder YAML | BFC + OneFabric (es-c1, es-e1) |
+| "EC2 fabric" | **EC2 Fabric** | FabricBuilder YAML | BFC + OneFabric (es-c1, es-e1) |
+| "UMN EC2" | **UMN EC2** | SwitchBuilder brick | Management core (es-mgmt-cor) |
+| "EC2 UMN" | **UMN EC2** | SwitchBuilder brick | Management core (es-mgmt-cor) |
+| "PROD" (alone) | **PROD Fabric** | FabricBuilder YAML | PROD BFC devices |
+| "PROD fabric" | **PROD Fabric** | FabricBuilder YAML | PROD BFC devices |
+| "UMN PROD" | **UMN PROD** | SwitchBuilder brick | PROD management core |
+| "PROD UMN" | **UMN PROD** | SwitchBuilder brick | PROD management core |
+| "Corp" or "Corp fabric" | **Corp NAP** | GenevaBuilder | NAP fabric |
+| "NAP" or "NAP fabric" | **Corp NAP** | GenevaBuilder | NAP fabric |
+| "DSN" | **DSN** | GenevaBuilder | DSN fabric |
+| "Console" | **Console** | ConsoleSiteDef | Console fabric |
 
-**⚠️ Key Distinction:**
-- **"UMN EC2"** = Management core topology (SwitchBuilder)
-- **"EC2 fabric"** or **"EC2 BFC"** = BFC/OneFabric topology (FabricBuilder)
+**⚠️ Key Rule:**
+- **Default (no "UMN")**: EC2 = BFC fabric, PROD = BFC fabric
+- **Explicit "UMN"**: UMN EC2 = Management core, UMN PROD = Management core
 
 ---
 
@@ -150,21 +161,25 @@ def find_agent_requirements(user_prompt: str) -> str:
     prompt_lower = user_prompt.lower()
     base_path = "/Users/anishkt/anish_topo_Agent_Project"
     
-    # Keyword matching with priority order to avoid confusion
+    # UNAMBIGUOUS keyword matching - clear priority order
     
-    # Check for UMN first (more specific)
-    if "umn ec2" in prompt_lower:
+    # Check for UMN explicitly (management core)
+    if "umn ec2" in prompt_lower or "ec2 umn" in prompt_lower:
         return f"{base_path}/umn_ec2_fabric_draw_Agent/REQUIREMENTS.md"
     
-    elif "umn prod" in prompt_lower:
+    elif "umn prod" in prompt_lower or "prod umn" in prompt_lower:
         return f"{base_path}/umn_prod_fabric_draw_Agent/REQUIREMENTS.md"
     
-    # Then check for FabricBuilder EC2/PROD
-    elif "ec2 fabric" in prompt_lower or "ec2 bfc" in prompt_lower or "fabricbuilder ec2" in prompt_lower:
+    # Default EC2/PROD (without "UMN") = BFC fabric
+    elif "ec2" in prompt_lower:
         return f"{base_path}/ec2_fabric_draw_Agent/REQUIREMENTS.md"
     
-    elif "prod fabric" in prompt_lower or "fabricbuilder prod" in prompt_lower:
+    elif "prod" in prompt_lower:
         return f"{base_path}/prod_fabric_draw_Agent/REQUIREMENTS.md"
+    
+    # Corp NAP
+    elif "corp" in prompt_lower or "nap" in prompt_lower:
+        return f"{base_path}/corp_nap_fabric_draw_agent/REQUIREMENTS.md"
     
     # Other topologies
     elif "dsn" in prompt_lower:
@@ -173,20 +188,8 @@ def find_agent_requirements(user_prompt: str) -> str:
     elif "console" in prompt_lower:
         return f"{base_path}/console_fabric_draw_Agent/REQUIREMENTS.md"
     
-    elif "corp nap" in prompt_lower or "nap fabric" in prompt_lower:
-        return f"{base_path}/corp_nap_fabric_draw_agent/REQUIREMENTS.md"
-    
-    # Ambiguous "EC2" or "PROD" alone
-    elif "ec2" in prompt_lower and "umn" not in prompt_lower:
-        # Ask user to clarify: UMN EC2 or EC2 BFC?
-        return None
-    
-    elif "prod" in prompt_lower and "umn" not in prompt_lower:
-        # Ask user to clarify: UMN PROD or PROD BFC?
-        return None
-    
     else:
-        # Ambiguous - ask user to clarify
+        # Unknown topology type
         return None
 ```
 
@@ -241,21 +244,28 @@ Each agent directory contains:
 
 ---
 
-## 🚀 Quick Agent Selection Guide
+## 🚀 Quick Agent Selection Guide (UNAMBIGUOUS)
 
-**User mentions**:
-- **"UMN EC2"** → UMN EC2 agent (management core)
-- **"EC2 fabric"** or **"EC2 BFC"** → EC2 fabric agent (BFC/OneFabric)
-- **"UMN PROD"** → UMN PROD agent (PROD management core)
-- **"PROD fabric"** → PROD fabric agent (PROD BFC)
-- "DSN" → DSN agent
-- "Console" → Console agent
-- "NAP" or "Corp NAP" → Corp NAP agent
+**Simple matching rules - NO clarification needed:**
 
-**⚠️ If user just says "EC2" or "PROD":**
-Ask them to clarify:
-- "Do you want UMN EC2 (management core) or EC2 fabric (BFC/OneFabric)?"
-- "Do you want UMN PROD (management core) or PROD fabric (BFC)?"
+| User Input | Agent Selected | Type |
+|------------|----------------|------|
+| "EC2" | EC2 Fabric | BFC/OneFabric |
+| "EC2 fabric" | EC2 Fabric | BFC/OneFabric |
+| "EC2 diagram" | EC2 Fabric | BFC/OneFabric |
+| "UMN EC2" or "EC2 UMN" | UMN EC2 | Management Core |
+| "PROD" | PROD Fabric | BFC |
+| "PROD fabric" | PROD Fabric | BFC |
+| "PROD diagram" | PROD Fabric | BFC |
+| "UMN PROD" or "PROD UMN" | UMN PROD | Management Core |
+| "Corp" or "Corp fabric" | Corp NAP | NAP fabric |
+| "NAP" or "NAP fabric" | Corp NAP | NAP fabric |
+| "DSN" | DSN | DSN fabric |
+| "Console" | Console | Console fabric |
+
+**Key Rule:**
+- **Without "UMN"**: EC2 = BFC fabric, PROD = BFC fabric
+- **With "UMN"**: Explicitly requests management core topology
 
 ---
 
