@@ -210,13 +210,34 @@ Each agent directory contains:
 
 ---
 
-## ⚠️ Critical Rules for All Agents
+## ⚠️ Critical Rules for AI Agents (Roo/Claude)
+
+### 🚨 MOST IMPORTANT: Use Existing Scripts
+
+**NEVER create new Python scripts!** Each agent directory already contains working generator scripts:
+
+- `umn_ec2_fabric_draw_Agent/` → Use existing `.py` files
+- `ec2_fabric_draw_Agent/` → Use `ec2_fabric_generator.py`
+- `corp_nap_fabric_draw_agent/` → Use `nap_fabric_generator.py`
+- `umn_prod_fabric_draw_Agent/` → Use existing `.py` files
+- `prod_fabric_draw_Agent/` → Use `prod_fabric_generator.py`
+- `dsn_fabric_draw_agent/` → Use existing `.py` files
+- `console_fabric_draw_Agent/` → Use existing `.py` files
+
+**Your job as AI agent:**
+1. ✅ Identify correct agent directory
+2. ✅ Read REQUIREMENTS.md for workflow
+3. ✅ Fetch configuration files using MCP tools
+4. ✅ Run existing Python scripts with fetched data
+5. ❌ **NEVER write new generator scripts**
+
+### Other Critical Rules
 
 1. **Always fetch fresh data** - never use cached files
-2. **Save output to Desktop** - never inside project folder
-3. **Follow REQUIREMENTS.md** - each agent has specific rules
-4. **Use builder-mcp** - for fetching configuration files
-5. **Generate plain XML** - no compression for draw.io
+2. **Follow REQUIREMENTS.md** - each agent has specific rules
+3. **Use MCP tools** - amzn-mcp or builder-mcp for fetching
+4. **Use existing scripts** - they're already tested and working
+5. **Save to specified location** - check agent's REQUIREMENTS.md
 
 ---
 
@@ -254,18 +275,41 @@ Ask them to clarify:
 
 ---
 
-## 🎓 For New AI Agents
+## 🎓 For New AI Agents (Roo/Claude)
 
 **First Time Using These Agents?**
 
-1. Read this README.md (you're here!)
-2. When user requests topology, identify type
-3. Navigate to appropriate agent directory
-4. Read REQUIREMENTS.md in that directory
-5. Follow the Quick Start section
-6. Generate topology
+1. ✅ Read this README.md (you're here!)
+2. ✅ When user requests topology, identify type using keywords
+3. ✅ Navigate to appropriate agent directory
+4. ✅ Read REQUIREMENTS.md in that directory
+5. ✅ Fetch configuration files using MCP tools
+6. ✅ **Use existing Python scripts** in that directory
+7. ✅ Run scripts with fetched data
+8. ❌ **DO NOT create new scripts**
 
-**Key Insight**: Each REQUIREMENTS.md is self-contained with everything needed to generate that topology type.
+**Key Insights:**
+- Each REQUIREMENTS.md is self-contained with complete workflow
+- Each agent directory has working Python scripts
+- Your role: orchestrate the workflow, don't rewrite the code
+- The scripts are generic and work for any site
+
+**Example Workflow:**
+```
+User: "Create EC2 fabric for nrt12-12"
+  ↓
+Roo: Identifies ec2_fabric_draw_Agent/
+  ↓
+Roo: Reads REQUIREMENTS.md
+  ↓
+Roo: Fetches nrt12-12-es-c1.yaml using MCP
+  ↓
+Roo: Saves to yaml-configs/ directory
+  ↓
+Roo: Runs existing ec2_fabric_generator.py script
+  ↓
+Roo: Returns topology file location to user
+```
 
 ---
 
