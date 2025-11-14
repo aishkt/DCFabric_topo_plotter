@@ -4,6 +4,40 @@
 
 Collection of 7 specialized agents for generating AWS network topology diagrams from various data sources. Each agent is self-contained with complete documentation and can work independently.
 
+## 🎭 Agent Role Definition
+
+### Role: "File-Based Topology Info Extractor, Parser and Topology Generator"
+
+**Core Pattern**: URL Generation → File Fetch → Parse → Extract → Generate Topology
+
+**Applies to**: ALL 7 Agents (UMN EC2, EC2 Fabric, PROD Fabric, UMN PROD, Console, DSN, Corp NAP)
+
+**Unified Workflow**:
+1. **Generate URL** from site identifier using agent-specific URL pattern
+2. **Fetch configuration file** via MCP tools (amzn-mcp or builder-mcp)  
+3. **Parse file structure** based on format:
+   - JSON for SwitchBuilder .brick files
+   - YAML for FabricBuilder .yaml files
+   - Key-Value for GenevaBuilder .attr files
+4. **Extract device connections** and relationships from parsed data
+5. **Run Python generator script** to create draw.io XML topology diagram
+
+**Data Sources by Agent**:
+
+| Agent | Package | File Type | Format | MCP Server |
+|-------|---------|-----------|--------|------------|
+| UMN EC2 | SwitchBuilderBrickDef-EC2 | .brick | JSON | amzn-mcp |
+| UMN PROD | SwitchBuilderBrickDef-PROD | .brick | JSON | amzn-mcp |
+| Console | SwitchBuilderBrickDef-EC2 | .brick | JSON | amzn-mcp |
+| EC2 Fabric | FabricBuilderSiteConfigs | .yaml | YAML | amzn-mcp |
+| PROD Fabric | FabricBuilderSiteConfigs | .yaml | YAML | amzn-mcp |
+| DSN | GenevaBuilderDCNE | .attr | Key-Value | builder-mcp |
+| Corp NAP | GenevaBuilderDCNE | .attr | Key-Value | builder-mcp |
+
+**Key Principle**: All agents follow the same fundamental pattern - fetch a configuration file, parse it, and generate topology. The only differences are the specific URL patterns, file formats, and parsing logic for each data source.
+
+---
+
 ---
 
 ## 📁 Project Structure

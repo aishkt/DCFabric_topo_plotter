@@ -21,7 +21,7 @@
 | **UMN EC2** (es-mgmt-cor) | `umn_ec2_fabric_draw_Agent` | SwitchBuilder **Brick** | JSON |
 | **EC2** (es-c1) | `ec2_fabric_draw_Agent` | FabricBuilder **YAML** | YAML |
 | **PROD** (ws-c1) | `prod_fabric_draw_Agent` | FabricBuilder **YAML** | YAML |
-| **Corp NAP** (np-cor) | `corp_nap_fabric_draw_agent` | **Network Tools** | API Response |
+| **Corp NAP** (np-cor) | `corp_nap_fabric_draw_agent` | GenevaBuilder **Attr** | Key-Value |
 | **Console** (es-mgmt) | `console_fabric_draw_Agent` | SwitchBuilder **Brick** | JSON |
 
 ---
@@ -140,27 +140,38 @@ https://code.amazon.com/packages/FabricBuilderSiteConfigs/blobs/mainline/--/site
 ## 🚀 Corp NAP Topology (np-cor)
 
 ### ⚠️ UNIQUE TO CORP NAP
-- **Data Source**: **Network Topology Tools** (NOT files!)
-- **Tool**: `network_location_topology`
-- **Method**: Dynamic neighbor traversal
-- **NO URLs**: Uses network API
+- **Data Source**: GenevaBuilderDCNE configuration files
+- **Package**: `GenevaBuilderDCNE`
+- **File Type**: `.attr` (key-value format)
+- **Key Sections**: CUSTOMERLAG, RINGLAG, RINGINTF, Inter-region NAP connections
 
-### Workflow (COMPLETELY DIFFERENT)
-```python
-# 1. Query network tool (NO URL generation)
-location = f"{site}-np-cor-r101"
-topology = network_location_topology(location)
-
-# 2. Extract neighbors from response
-# 3. Traverse neighbors recursively
-# 4. Build topology dynamically
-# 5. Generate draw.io XML
+### URL Pattern (SPECIFIC TO CORP NAP)
+```
+https://code.amazon.com/packages/GenevaBuilderDCNE/blobs/mainline/--/targetspec/nap-{region}/{site}-np-cor-r/{site}-np-cor-r101/routerspecific.attr
 ```
 
-### ⚠️ Critical Rules
-- ❌ NEVER use cached discovery data
-- ✅ ALWAYS query network tools fresh
-- ✅ NO file fetching - uses network API
+### Complete Workflow
+```python
+# 1. Generate URL
+site = "bjs11-11"
+region = site[:3]  # "bjs"
+url = f"https://code.amazon.com/packages/GenevaBuilderDCNE/blobs/mainline/--/targetspec/nap-{region}/{site}-np-cor-r/{site}-np-cor-r101/routerspecific.attr"
+
+# 2. Fetch .attr file (ALWAYS FRESH)
+use_mcp_tool(server_name="builder-mcp", tool_name="ReadInternalWebsites", inputs=[url])
+
+# 3. Parse .attr file
+# Parse CUSTOMERLAG, RINGLAG, RINGINTF sections
+# Extract inter-region NAP connections (PEER, FWPEER patterns)
+
+# 4. Group devices (r101+r102 → r10[12], r1+r2 → r[12])
+# 5. Remove duplicates
+# 6. Generate draw.io XML
+```
+
+### Examples
+- bjs11-11 → `.../nap-bjs/bjs11-11-np-cor-r/bjs11-11-np-cor-r101/routerspecific.attr`
+- iad12-12 → `.../nap-iad/iad12-12-np-cor-r/iad12-12-np-cor-r101/routerspecific.attr`
 
 ### 📖 Full Details
 [`corp_nap_fabric_draw_agent/REQUIREMENTS.md`](corp_nap_fabric_draw_agent/REQUIREMENTS.md:1)
@@ -202,14 +213,13 @@ Format: YAML
 Sections: bricks, neighbors
 ```
 
-### Tool-Based Agents
-
-**3. Corp NAP** (Network tools):
+**3. Attribute Files** (Key-Value format):
 ```
-Tool: network_location_topology
-Input: {site}-np-cor-r101
-Format: API Response
-Method: Dynamic traversal
+Package: GenevaBuilderDCNE
+File: {site}-np-cor-r101/routerspecific.attr
+Format: Key-Value pairs
+Sections: CUSTOMERLAG, RINGLAG, RINGINTF, NAP connections
+Agents: DSN, Corp NAP
 ```
 
 ---
@@ -218,7 +228,7 @@ Method: Dynamic traversal
 
 1. ❌ Using EC2 YAML URLs for UMN EC2 (wrong - UMN uses brick files!)
 2. ❌ Using brick files for EC2 fabric (wrong - EC2 uses YAML!)
-3. ❌ Looking for Corp NAP files (wrong - uses network tools!)
+3. ❌ Using wrong MCP server (amzn-mcp for GenevaBuilder - wrong, use builder-mcp!)
 4. ❌ Using cached/saved data (wrong - always fetch fresh!)
 5. ❌ Mixing up package names (each agent has specific package)
 
