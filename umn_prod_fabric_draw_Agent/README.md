@@ -88,13 +88,28 @@ Use the same generator logic as UMN EC2, just with ws-mgmt instead of es-mgmt.
 
 ---
 
-## ⚠️ Critical Requirements
+## ⚠️ CRITICAL RULES FOR AI AGENTS
 
-- ❌ **NEVER use saved/cached config files**
-- ✅ **ALWAYS generate URL from site identifier**
-- ✅ **ALWAYS fetch fresh config from code.amazon.com**
-- ✅ **ALWAYS separate v1 devices** (for all sites that have them)
-- ✅ **ALWAYS preserve all ws-mgmt-cor connections**
+#### 🚨 DO's
+
+1. ✅ **USE existing Python scripts** - `umn_prod_topology_generator.py` is in this directory
+2. ✅ **ALWAYS fetch fresh config** from code.amazon.com using amzn-mcp
+3. ✅ **ALWAYS generate URL** from site identifier (never hardcode)
+4. ✅ **Use amzn-mcp** (NOT builder-mcp) for SwitchBuilderBrickDef packages
+5. ✅ **Parse JSON format** (.brick files are JSON, not text)
+6. ✅ **Separate v1 devices** for ROOT DC (keep v1 separate from r[12])
+7. ✅ **Save output to Desktop** (outside project folder)
+8. ✅ **Follow the workflow** in REQUIREMENTS.md
+
+#### 🚫 DON'Ts
+
+1. ❌ **NEVER create new Python generator scripts** - use existing `umn_prod_topology_generator.py`
+2. ❌ **NEVER use cached/saved config files** - always fetch fresh
+3. ❌ **NEVER hardcode URLs** - generate dynamically from site identifier
+4. ❌ **NEVER use builder-mcp** for SwitchBuilderBrickDef - use amzn-mcp
+5. ❌ **NEVER group v1 with r[12]** for ROOT DC - keep separate
+6. ❌ **NEVER save output inside project folder** - save to Desktop
+7. ❌ **NEVER skip NODES_AND_INTERFACES** - required for connections
 
 ---
 
