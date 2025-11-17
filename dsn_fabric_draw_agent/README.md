@@ -96,14 +96,28 @@ from xml.dom import minidom
 # Deduplicate connections
 ```
 
-### ⚠️ CRITICAL RULES
+### ⚠️ CRITICAL RULES FOR AI AGENTS
 
-1. **NEVER use saved/cached config files**
-2. **ALWAYS generate URL from site identifier**
-3. **ALWAYS fetch fresh config from code.amazon.com**
-4. **Use builder-mcp** (not amzn-mcp) for GenevaBuilderDCNE
-5. **Try r3 → r1 → r2** (different sites use different device numbers)
-6. **Parse .attr format** (text file, not JSON/YAML)
+#### 🚨 DO's
+
+1. ✅ **USE existing Python scripts** - `dsn_fabric_generator.py` is already in this directory
+2. ✅ **ALWAYS fetch fresh config** from code.amazon.com using builder-mcp
+3. ✅ **ALWAYS generate URL** from site identifier (never hardcode)
+4. ✅ **Use builder-mcp** (NOT amzn-mcp) for GenevaBuilderDCNE package
+5. ✅ **Try r3 → r1 → r2** fallback logic for different sites
+6. ✅ **Parse text format** (.attr files are plain text, not JSON/YAML)
+7. ✅ **Save output to Desktop** (outside project folder)
+8. ✅ **Follow the workflow** in REQUIREMENTS.md
+
+#### 🚫 DON'Ts
+
+1. ❌ **NEVER create new Python generator scripts** - use existing `dsn_fabric_generator.py`
+2. ❌ **NEVER use cached/saved config files** - always fetch fresh
+3. ❌ **NEVER hardcode URLs** - generate dynamically from site identifier
+4. ❌ **NEVER use amzn-mcp** for GenevaBuilderDCNE - use builder-mcp
+5. ❌ **NEVER assume device number** - use fallback strategy (r3 → r1 → r2)
+6. ❌ **NEVER save output inside project folder** - save to Desktop
+7. ❌ **NEVER skip URL fallback** - different sites use different device numbers
 
 ### 📋 Complete Examples
 
