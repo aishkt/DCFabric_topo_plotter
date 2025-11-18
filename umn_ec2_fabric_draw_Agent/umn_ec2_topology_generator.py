@@ -14,12 +14,21 @@ from collections import defaultdict
 class UMNTopologyGenerator:
     """Generate UMN EC2 fabric topology from brick definitions"""
     
-    def __init__(self, brick_file: str, output_dir: str):
+    def __init__(self, site: str, brick_file: str, output_dir: str):
+        self.site = site
         self.brick_file = brick_file
         self.output_dir = output_dir
         self.devices = {}
         self.connections = []
         self.grouped_devices = {}
+        
+        # Extract ROOT AZ and DC from site
+        match = re.match(r'([a-z]+\d+)-(\d+)', site)
+        if match:
+            self.root_az = match.group(1)
+            self.root_dc = match.group(2)
+        else:
+            raise ValueError(f"Invalid site format: {site}. Expected format: abc12-34")
         
         # Color scheme for device types
         self.colors = {
@@ -64,12 +73,12 @@ class UMNTopologyGenerator:
         return self.devices
     
     def _extract_az(self, device_name: str) -> str:
-        """Extract AZ from device name (e.g., bjs11-11-... -> bjs11)"""
+        """Extract AZ from device name (e.g., nrt55-62-... -> nrt55)"""
         match = re.match(r'([a-z]+\d+)-', device_name)
         return match.group(1) if match else 'unknown'
     
     def _extract_dc(self, device_name: str) -> str:
-        """Extract DC from device name (e.g., bjs11-11-... -> 11)"""
+        """Extract DC from device name (e.g., nrt55-62-... -> 62)"""
         match = re.match(r'[a-z]+\d+-(\d+)-', device_name)
         return match.group(1) if match else 'unknown'
     
@@ -178,8 +187,9 @@ class UMNTopologyGenerator:
     def determine_device_color(self, device_name: str, grouped_devices: List[str]) -> str:
         """Determine color for a device based on its type and location"""
         
-        # Check if this is the ROOT DC (bjs11-11)
-        if any('bjs11-11' in d for d in grouped_devices):
+        # Check if this is the ROOT DC
+        root_pattern = f"{self.root_az}-{self.root_dc}"
+        if any(root_pattern in d for d in grouped_devices):
             return self.colors['mgmt_cor_root']
         
         # Get device info from first member of the group
@@ -201,9 +211,9 @@ class UMNTopologyGenerator:
         az = device_info['az']
         dc = device_info['dc']
         
-        if az == 'bjs11' and dc != '11':
+        if az == self.root_az and dc != self.root_dc:
             return self.colors['mgmt_cor_intra_az']
-        elif az != 'bjs11':
+        elif az != self.root_az:
             return self.colors['mgmt_cor_inter_az']
         
         return self.colors['other']
@@ -272,7 +282,7 @@ class UMNTopologyGenerator:
     
     def save_topology(self, xml_content: str):
         """Save topology to draw.io file"""
-        output_file = os.path.join(self.output_dir, 'bjs11-11-umn-ec2-topology.drawio')
+        output_file = os.path.join(self.output_dir, f'{self.site}-umn-ec2-topology.drawio')
         
         with open(output_file, 'w') as f:
             f.write(xml_content)
@@ -307,16 +317,17 @@ class UMNTopologyGenerator:
 
 def main():
     """Main entry point"""
-    if len(sys.argv) < 2:
-        print("Usage: python3 umn_ec2_topology_generator.py <brick_file> [output_dir]")
+    if len(sys.argv) < 3:
+        print("Usage: python3 umn_ec2_topology_generator.py <site> <brick_file> [output_dir]")
         print("\nExample:")
-        print("  python3 umn_ec2_topology_generator.py \\")
-        print("    /Users/anishkt/bjs11-11-umn-ec2-topology/brick-configs/bjs-es-mgmt-cor.json \\")
-        print("    /Users/anishkt/bjs11-11-umn-ec2-topology")
+        print("  python3 umn_ec2_topology_generator.py nrt55-62 \\")
+        print("    /Users/anishkt/nrt55-62-umn-ec2-topology/brick-configs/nrt-es-mgmt-cor.json \\")
+        print("    /Users/anishkt/nrt55-62-umn-ec2-topology")
         sys.exit(1)
     
-    brick_file = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else os.path.dirname(brick_file)
+    site = sys.argv[1]
+    brick_file = sys.argv[2]
+    output_dir = sys.argv[3] if len(sys.argv) > 3 else os.path.dirname(brick_file)
     
     if not os.path.exists(brick_file):
         print(f"❌ Error: Brick file not found: {brick_file}")
@@ -326,7 +337,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     # Run generator
-    generator = UMNTopologyGenerator(brick_file, output_dir)
+    generator = UMNTopologyGenerator(site, brick_file, output_dir)
     generator.run()
 
 if __name__ == '__main__':

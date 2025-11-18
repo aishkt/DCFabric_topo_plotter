@@ -14,16 +14,25 @@ from collections import defaultdict
 class UMNTopologyGenerator:
     """Generate UMN EC2 fabric topology from brick definitions"""
     
-    def __init__(self, output_dir: str):
+    def __init__(self, site: str, output_dir: str):
+        self.site = site
         self.output_dir = output_dir
         self.devices = {}
         self.connections = []
         self.grouped_devices = {}
         self.brick_data = None
         
+        # Extract ROOT AZ and DC from site
+        match = re.match(r'([a-z]+\d+)-(\d+)', site)
+        if match:
+            self.root_az = match.group(1)
+            self.root_dc = match.group(2)
+        else:
+            raise ValueError(f"Invalid site format: {site}. Expected format: abc12-34")
+        
         # Color scheme for device types
         self.colors = {
-            'mgmt_cor_root': '#FFE6CC',      # Orange - ROOT DC (bjs11-11)
+            'mgmt_cor_root': '#FFE6CC',      # Orange - ROOT DC
             'mgmt_cor_inter_az': '#DAE8FC',  # Light Blue - Inter-AZ
             'mgmt_cor_intra_az': '#D5E8D4',  # Light Green - Intra-AZ
             'es_c1': '#F8CECC',              # Light Red - ES-C1 fabric
@@ -271,8 +280,9 @@ class UMNTopologyGenerator:
     def determine_device_color(self, grouped_name: str, members: List[str]) -> str:
         """Determine color for a device based on its type and location"""
         
-        # Check if this is the ROOT DC (bjs11-11)
-        if any('bjs11-11' in d for d in members):
+        # Check if this is the ROOT DC
+        root_pattern = f"{self.root_az}-{self.root_dc}"
+        if any(root_pattern in d for d in members):
             return self.colors['mgmt_cor_root']
         
         # Get device info from first member of the group
@@ -299,12 +309,12 @@ class UMNTopologyGenerator:
         az = device_info['az']
         dc = device_info['dc']
         
-        # Intra-AZ: same AZ as root (bjs11) but different DC
-        if az == 'bjs11' and dc != '11':
+        # Intra-AZ: same AZ as root but different DC
+        if az == self.root_az and dc != self.root_dc:
             return self.colors['mgmt_cor_intra_az']
         
         # Inter-AZ: different AZ from root
-        if az != 'bjs11':
+        if az != self.root_az:
             return self.colors['mgmt_cor_inter_az']
         
         return self.colors['other']
@@ -342,12 +352,14 @@ class UMNTopologyGenerator:
         intra_az_devices = []
         other_devices = []
         
+        root_pattern = f"{self.root_az}-{self.root_dc}"
+        
         for grouped_name, members in self.grouped_devices.items():
-            if any('bjs11-11' in d for d in members):
+            if any(root_pattern in d for d in members):
                 root_devices.append((grouped_name, members))
-            elif any(self.devices.get(m, {}).get('az', '') != 'bjs11' for m in members if m in self.devices):
+            elif any(self.devices.get(m, {}).get('az', '') != self.root_az for m in members if m in self.devices):
                 inter_az_devices.append((grouped_name, members))
-            elif any(self.devices.get(m, {}).get('az', '') == 'bjs11' and self.devices.get(m, {}).get('dc', '') != '11' for m in members if m in self.devices):
+            elif any(self.devices.get(m, {}).get('az', '') == self.root_az and self.devices.get(m, {}).get('dc', '') != self.root_dc for m in members if m in self.devices):
                 intra_az_devices.append((grouped_name, members))
             else:
                 other_devices.append((grouped_name, members))
@@ -451,7 +463,7 @@ class UMNTopologyGenerator:
     
     def save_topology(self, xml_content: str):
         """Save topology to draw.io file"""
-        output_file = os.path.join(self.output_dir, 'bjs11-11-umn-ec2-topology.drawio')
+        output_file = os.path.join(self.output_dir, f'{self.site}-umn-ec2-topology.drawio')
         
         with open(output_file, 'w') as f:
             f.write(xml_content)
@@ -530,14 +542,22 @@ MCP_CONTENT = """{
 
 def main():
     """Main entry point"""
-    output_dir = '/Users/anishkt/bjs11-11-umn-ec2-topology'
+    if len(sys.argv) < 2:
+        print("Usage: python3 umn_ec2_topology_generator_complete.py <site>")
+        print("\nExample:")
+        print("  python3 umn_ec2_topology_generator_complete.py nrt55-62")
+        print("  python3 umn_ec2_topology_generator_complete.py bjs11-11")
+        sys.exit(1)
+    
+    site = sys.argv[1]
+    output_dir = f'/Users/anishkt/{site}-umn-ec2-topology'
     
     # Create output directory if needed
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, 'analysis'), exist_ok=True)
     
     # Run generator
-    generator = UMNTopologyGenerator(output_dir)
+    generator = UMNTopologyGenerator(site, output_dir)
     generator.run(MCP_CONTENT)
 
 if __name__ == '__main__':
